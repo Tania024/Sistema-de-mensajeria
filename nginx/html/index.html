@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+
+    <style>
+        
+        body {
+            font-family: 'Segoe UI', Verdana, sans-serif;
+            margin: 0;
+            background-color: #f5edf9; /* Fondo suave morado pastel */
+            color: #4a235a; /* Texto morado oscuro */
+        }
+        header {
+            background-color: #a77ecf;
+            padding: 15px;
+            text-align: center;
+            color: white;
+        }
+        nav {
+            background-color: #c39bd3;
+            padding: 10px;
+            text-align: center;
+        }
+        nav a {
+            color: #fff;
+            margin: 0 15px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        h1, h2, h3 {
+            color: #7e57c2;
+        }
+        section {
+            padding: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 60px;
+            border: 1px solid #d1c4e9;
+            border-radius: 5px;
+            padding: 8px;
+            background-color: #f3e5f5;
+            color: #4a235a;
+        }
+        button {
+            margin-top: 5px;
+            background-color: #ba68c8;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #9c27b0;
+        }
+        .messages, .historial {
+            border: 1px solid #d1c4e9;
+            padding: 10px;
+            height: 120px;
+            overflow-y: auto;
+            background-color: #ffffff;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .user-box {
+            margin-bottom: 30px;
+        }
+
+        /* ✅ Centramos la sección de bienvenida */
+        #inicio-section {
+            text-align: center;
+            padding: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- ✅ Menú superior -->
+    <nav>
+        <a href="#inicio-section">Inicio</a>
+        <a href="#mensajes-section">Mensajes</a>
+        <a href="#historial-section" onclick="cargarHistorial()">Historial</a>
+    </nav>
+
+    <!-- ✅ Sección de bienvenida -->
+    <div id="inicio-section">
+        <h2>Bienvenido al Sistema de Mensajería 💬</h2>
+        <p>Este sistema te permite enviar, recibir y responder mensajes en tiempo real entre usuarios.</p>
+        <p>Usa el menú superior para navegar entre las secciones y empezar a chatear.</p>
+    </div>
+
+    <div id="mensajes-section">
+        <div class="user-box">
+            <h3>Usuario 1 (Erika)</h3>
+            <label>Mensaje:</label><br/>
+            <textarea id="mensajeErika"></textarea><br/>
+            <button onclick="enviar('Erika', 'Tania', 'mensajeErika')">Enviar</button>
+            <button onclick="recibir('Erika', 'mensajesErika')">Responder</button>
+            <div class="messages" id="mensajesErika"></div>
+        </div>
+
+        <div class="user-box">
+            <h3>Usuario 2 (Tania)</h3>
+            <label>Mensaje:</label><br/>
+            <textarea id="mensajeTania"></textarea><br/>
+            <button onclick="enviar('Tania', 'Erika', 'mensajeTania')">Enviar</button>
+            <button onclick="recibir('Tania', 'mensajesTania')">Responder</button>
+            <div class="messages" id="mensajesTania"></div>
+        </div>
+    </div>
+
+    <!-- ✅ Historial general -->
+    <h3 id="historial-section">Historial</h3>
+    <div class="messages" id="historial">Cargando historial...</div>
+
+    <script>
+        function enviar(emisor, receptor, mensajeId) {
+            const mensaje = document.getElementById(mensajeId).value;
+
+            fetch('/enviar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ emisor, receptor, mensaje })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Mensaje enviado');
+                document.getElementById(mensajeId).value = '';
+                cargarHistorial();
+            })
+            .catch(error => console.error(error));
+        }
+
+        function recibir(usuario, divId) {
+            fetch(`/recibir/${usuario}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.mensaje && data.mensaje !== 'No hay mensajes') {
+                    const div = document.getElementById(divId);
+                    div.innerHTML += `<div>${data.mensaje}</div>`;
+                    div.scrollTop = div.scrollHeight;
+                    cargarHistorial();
+                }
+            })
+            .catch(error => console.error(error));
+        }
+
+        function cargarHistorial() {
+            fetch('/historial')
+            .then(response => response.json())
+            .then(data => {
+                const div = document.getElementById('historial');
+                div.innerHTML = '';
+                data.forEach(msg => {
+                    div.innerHTML += `<div><strong>${msg.emisor} ➜ ${msg.receptor}:</strong> ${msg.mensaje}</div>`;
+                });
+                div.scrollTop = div.scrollHeight;
+            })
+            .catch(error => {
+                document.getElementById('historial').innerHTML = 'Error al cargar historial';
+                console.error(error);
+            });
+        }
+
+        // ✅ Polling automático cada 3 segundos
+        setInterval(() => {
+            recibir('Erika', 'mensajesErika');
+            recibir('Tania', 'mensajesTania');
+            cargarHistorial();
+        }, 3000);
+
+        // Cargar historial inicial
+        cargarHistorial();
+    </script>
+</body>
+</html>
