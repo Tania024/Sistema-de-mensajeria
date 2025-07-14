@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - api1
+      - api2
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: chat
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  api1:
+    build: ./api
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=chat
+      - DB_USER=user
+      - DB_PASS=pass
+      - REDIS_HOST=redis
+    depends_on:
+      - db
+      - redis
+
+  api2:
+    build: ./api
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=chat
+      - DB_USER=user
+      - DB_PASS=pass
+      - REDIS_HOST=redis
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  db_data:
