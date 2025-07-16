@@ -2,20 +2,12 @@
 <html>
 <head>
     <meta charset="UTF-8" />
-
     <style>
-        
         body {
             font-family: 'Segoe UI', Verdana, sans-serif;
             margin: 0;
-            background-color: #f5edf9; /* Fondo suave morado pastel */
-            color: #4a235a; /* Texto morado oscuro */
-        }
-        header {
-            background-color: #a77ecf;
-            padding: 15px;
-            text-align: center;
-            color: white;
+            background-color: #f5edf9; 
+            color: #4a235a; 
         }
         nav {
             background-color: #c39bd3;
@@ -28,11 +20,11 @@
             text-decoration: none;
             font-weight: bold;
         }
-        h1, h2, h3 {
+        h2, h3 {
             color: #7e57c2;
         }
-        section {
-            padding: 20px;
+        .user-box {
+            margin-bottom: 30px;
         }
         textarea {
             width: 100%;
@@ -64,27 +56,19 @@
             border-radius: 5px;
             margin-top: 10px;
         }
-        .user-box {
-            margin-bottom: 30px;
-        }
-
-        /* ✅ Centramos la sección de bienvenida */
         #inicio-section {
             text-align: center;
             padding: 30px;
         }
     </style>
 </head>
-
 <body>
-    <!-- ✅ Menú superior -->
     <nav>
         <a href="#inicio-section">Inicio</a>
         <a href="#mensajes-section">Mensajes</a>
         <a href="#historial-section" onclick="cargarHistorial()">Historial</a>
     </nav>
 
-    <!-- ✅ Sección de bienvenida -->
     <div id="inicio-section">
         <h2>Bienvenido al Sistema de Mensajería 💬</h2>
         <p>Este sistema te permite enviar, recibir y responder mensajes en tiempo real entre usuarios.</p>
@@ -111,7 +95,6 @@
         </div>
     </div>
 
-    <!-- ✅ Historial general -->
     <h3 id="historial-section">Historial</h3>
     <div class="messages" id="historial">Cargando historial...</div>
 
@@ -126,11 +109,22 @@
             })
             .then(response => response.json())
             .then(data => {
-                alert('Mensaje enviado');
+                if (data.error) {
+                    alert("❌ Error: " + data.error);
+                } else if (data.warning) {
+                    alert("⚠️ Advertencia: " + data.warning);
+                } else if (data.estado) {
+                    alert("✅ " + data.estado);
+                } else {
+                    alert("⚠️ Respuesta desconocida");
+                }
                 document.getElementById(mensajeId).value = '';
                 cargarHistorial();
             })
-            .catch(error => console.error(error));
+            .catch(error => {
+                alert("❌ Error en la solicitud: " + error);
+                console.error(error);
+            });
         }
 
         function recibir(usuario, divId) {
@@ -164,14 +158,11 @@
             });
         }
 
-        // ✅ Polling automático cada 3 segundos
         setInterval(() => {
             recibir('Erika', 'mensajesErika');
             recibir('Tania', 'mensajesTania');
             cargarHistorial();
         }, 3000);
-
-        // Cargar historial inicial
         cargarHistorial();
     </script>
 </body>

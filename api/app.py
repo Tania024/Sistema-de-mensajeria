@@ -18,7 +18,7 @@ while True:
             dbname=os.getenv("DB_NAME", "chat"),
             user=os.getenv("DB_USER", "user"),
             password=os.getenv("DB_PASS", "pass"),
-            connect_timeout=5  # Timeout de conexión inicial
+            connect_timeout=5
         )
         print("✅ Conectado a PostgreSQL")
         break
@@ -53,32 +53,43 @@ def enviar_mensaje():
     if not emisor or not receptor or not mensaje:
         return jsonify({'error': 'Datos incompletos'}), 400
 
-    #  Reintentos para Redis
+    # Reintentos para Redis
+    redis_exitoso = False
     for intento in range(3):
         try:
             r.rpush(f"mensajes_{receptor}", f"{emisor}: {mensaje}")
+            redis_exitoso = True
             break
         except redis.exceptions.RedisError as e:
             print(f"⚠️ Error en Redis (intento {intento+1}): {e}")
             time.sleep(1)
-    else:
-        return jsonify({'error': 'No se pudo guardar el mensaje en Redis'}), 500
 
     # Reintentos para PostgreSQL
+    postgres_exitoso = False
     for intento in range(3):
         try:
             cur = conn.cursor()
             cur.execute("INSERT INTO historial (emisor, receptor, mensaje) VALUES (%s, %s, %s)", (emisor, receptor, mensaje))
             conn.commit()
             cur.close()
+            postgres_exitoso = True
             break
         except Exception as e:
             print(f"⚠️ Error en PostgreSQL (intento {intento+1}): {e}")
             time.sleep(1)
-    else:
-        return jsonify({'error': 'No se pudo guardar el mensaje en la base de datos'}), 500
 
-    return jsonify({'estado': 'mensaje enviado'})
+      # Lógica de respuesta al usuario
+    if not redis_exitoso and not postgres_exitoso:
+        return jsonify({'error': 'Fallo en el sistema,'
+                                 'el mensaje no se pudo entregar en tiempo real al destinatario. Intenta más tarde.'}), 500
+    elif not redis_exitoso and postgres_exitoso:
+        return jsonify({
+            'warning': 'Fallo en el sistema, '
+                       'el mensaje no se pudo entregar en tiempo real al destinatario. Puedes volver a intentarlo más tarde.'
+        }), 200
+
+    return jsonify({'estado': 'Mensaje enviado correctamente'}), 200
+
 
 @app.route('/recibir/<usuario>', methods=['GET'])
 def recibir_mensaje(usuario):

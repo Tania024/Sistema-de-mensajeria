@@ -85,6 +85,9 @@ services:
       - api1
       - api2
 
+  
+
 volumes:
   db_data:
   db_replica_data:
+  grafana_data:
